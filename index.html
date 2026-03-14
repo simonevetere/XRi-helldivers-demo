@@ -152,6 +152,8 @@
         // ==========================================
         const logOverlay = document.getElementById('debug-log-overlay');
         const logContent = document.getElementById('debug-log-content');
+        const primo = new Audio('https://raw.githubusercontent.com/simonevetere/XRi-helldivers-demo/main/assets/audio/2.mp3');
+        const secondo = new Audio('https://raw.githubusercontent.com/simonevetere/XRi-helldivers-demo/main/assets/audio/1.mp3');
         const sndClick = new Audio('https://www.soundjay.com/buttons_c2026/sounds/button-3.mp3');
         const sndError = new Audio('https://www.soundjay.com/buttons_c2026/sounds/beep-10.mp3');
         const sndBomb = new Audio('https://cdn.pixabay.com/download/audio/2025/05/18/audio_a3b384a2d2.mp3?filename=soundreality-explosion-fx-343683.mp3');
@@ -310,7 +312,7 @@
 
             window.log("Bersaglio neutralizzato. Per la democrazia!", "#00ffcc");
 
-            // 5. Cleanup dell'esplosione dopo 2 secondi
+            secondo.play();
             setTimeout(async () => {
                 await explosion.setVisible(false);
             }, 4000);
@@ -327,8 +329,7 @@
         
         const targetSequence = ['up', 'right', 'down', 'down', 'down'];
         let currentInput = [];
-        let gameState = "START"; // Stati possibili: "START", "READY", "PLAYING", "RESTART"
-        
+        let gameState = "START"; // Stati possibili: "START", "READY", "PLAYING", "RESTART"        
         const displayScreen = document.getElementById('display-screen');
         const statusMsg = document.getElementById('status-msg');
         const arrowSymbols = { 'up': '⬆️', 'down': '⬇️', 'left': '⬅️', 'right': '➡️' };
@@ -340,6 +341,7 @@
         // Gestione del click sullo schermo centrale (per START/RESTART)
         displayScreen.addEventListener('pointerdown', async () => {
             if (gameState === "START") {
+                primo.play();
                 gameState = "READY"; // Evita doppi click
                 displayScreen.innerText = "CARICAMENTO...";
                 statusMsg.innerText = "SCHIERAMENTO IN CORSO...";
