@@ -110,7 +110,7 @@
 <body>
 
 <div class="container">
-    <h2>Identificazione Operativo</h2>
+    <h2>Identificazione Super Cittadino</h2>
     <input class="input-field" placeholder="INSERISCI ID..." inputmode="none" />
     
     <div class="simple-keyboard"></div>
@@ -198,12 +198,11 @@ function onKeyPress(button) {
 
         mostraMessaggio(
             "REGISTRAZIONE COMPLETATA", 
-            `Benvenuto negli Helldiver, Operativo ${playerName}! Sei pronto a diffondere la Democrazia Controllata?`, 
+            `Benvenuto negli Helldiver,  Super Cittadino ${playerName}! Sei pronto a diffondere la Democrazia Controllata?`, 
             {
                 textYes: "PER LA SUPER TERRA",
                 actionYes: () => { 
-                    // Indirizza alla pagina di gioco
-                    window.location.href = `${basePath}class.html${window.location.search}`; 
+                    window.location.href = `${basePath}/playable/class.html${window.location.search}`; 
                 },
                 textNo: "ANNULLA",
                 actionNo: () => {
