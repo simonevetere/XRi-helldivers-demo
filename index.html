@@ -1,437 +1,239 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-    <script src="https://xri.onl/XRi.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>XR Helldivers Terminal - Fullscreen</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
-
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Share Tech Mono', monospace;
-            background-color: transparent; 
-            touch-action: manipulation;
-        }
-
-        #ui-layer {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            z-index: 1000;
-            background: rgba(5, 5, 5, 0.85); 
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            box-sizing: border-box;
-            color: #ffe800;
-        }
-
-        h1 { 
-            font-size: 2.5rem; 
-            margin: 0 0 10px 0; 
-            text-transform: uppercase;
-            text-shadow: 0 0 15px rgba(255, 232, 0, 0.5);
-            text-align: center;
-        }
-        
-        .target { font-size: 1.5rem; color: #aaa; margin-bottom: 30px; text-align: center; }
-        
-        #display-screen {
-            background-color: #111;
-            border: 2px solid #444;
-            width: 90%; max-width: 500px; height: 80px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 3.5rem; letter-spacing: 15px; margin-bottom: 20px;
-            border-radius: 10px; box-shadow: inset 0 0 15px #000;
-        }
-
-        #status-msg { font-size: 1.5rem; height: 40px; margin-bottom: 40px; font-weight: bold; }
-
-        .d-pad {
-            display: grid;
-            grid-template-columns: repeat(3, 100px); 
-            grid-template-rows: repeat(3, 100px);
-            gap: 15px; justify-content: center;
-        }
-
-        .btn {
-            background-color: #222; border: 3px solid #ffe800; border-radius: 15px;
-            font-size: 3rem; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; user-select: none; box-shadow: 0 0 20px rgba(255, 232, 0, 0.2); transition: 0.1s;
-        }
-        .btn:active { background-color: #ffe800; color: #000; transform: scale(0.9); }
-        .up { grid-column: 2; grid-row: 1; }
-        .left { grid-column: 1; grid-row: 2; }
-        .right { grid-column: 3; grid-row: 2; }
-        .down { grid-column: 2; grid-row: 3; }
-
-        /* ==========================================
-           STILI PANNELLO DI LOG GIGANTE
-           ========================================== */
-        #debug-log-overlay {
-            display: none; /* Nascosto di default */
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.95);
-            z-index: 9999; /* Sopra a tutto! */
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        #debug-log-content {
-            width: 95%; height: 70%;
-            background: #111;
-            border: 4px solid #ff3333;
-            border-radius: 10px;
-            color: #fff;
-            font-size: 1.5rem;
-            overflow-y: auto;
-            padding: 20px;
-            text-align: left;
-            word-wrap: break-word;
-        }
-
-        #close-log-btn {
-            margin-top: 20px;
-            padding: 20px 50px;
-            font-size: 2.5rem;
-            font-family: 'Share Tech Mono', monospace;
-            font-weight: bold;
-            background: #ff3333;
-            color: white;
-            border: none;
-            border-radius: 15px;
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-        #close-log-btn:active { transform: scale(0.95); }
-        #display-screen {
-            background-color: #111;
-            border: 2px solid #444;
-            width: 90%; max-width: 500px; height: 80px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 3.5rem; letter-spacing: 15px; margin-bottom: 20px;
-            border-radius: 10px; box-shadow: inset 0 0 15px #000;
-            cursor: pointer; /* <--- NUOVO */
-        }
-    </style>
+    <title>Terminale Schieramento - Helldivers XR</title>
+    <script src="https://xri.onl/XRi.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style/main.css">
+    <link rel="stylesheet" href="style/components.css">
+    <link rel="stylesheet" href="style/debug.css">
+    <script src="js/utils.js"></script>
 </head>
 <body>
 
-    <div id="debug-log-overlay">
-        <div id="debug-log-content"></div>
-        <button id="close-log-btn" onclick="closeLog()">Chiudi Log</button>
+<div class="loader-container">
+    <h2 id="main-title">HELLDIVERS 2 XR</h2>
+    <div class="progress-track">
+        <div id="progress-bar" class="progress-fill"></div>
     </div>
+    <div id="status-text">Connessione al Super Destroyer...</div>
+</div>
 
-    <div id="ui-layer">
-        <h1>Terminale Stratagemmi</h1>
-        <div class="target">BOMBA 500KG<br>⬆️ ➡️ ⬇️ ⬇️ ⬇️</div>
-        <div id="display-screen"></div>
-        <div id="status-msg">IN ATTESA...</div>
-        <div class="d-pad">
-            <div class="btn up" onclick="inputDirection('up')">⬆️</div>
-            <div class="btn left" onclick="inputDirection('left')">⬅️</div>
-            <div class="btn right" onclick="inputDirection('right')">➡️</div>
-            <div class="btn down" onclick="inputDirection('down')">⬇️</div>
+<div id="vr-overlay" class="overlay">
+    <div class="popup">
+        <h3></h3>
+        <p></p>
+        <div class="popup-buttons">
+            <button class="btn-no"></button>
+            <button class="btn-yes"></button>
         </div>
     </div>
+</div>
 
-    <script>
-        // ==========================================
-        // SISTEMA DI LOGGING CUSTOM
-        // ==========================================
-        const logOverlay = document.getElementById('debug-log-overlay');
-        const logContent = document.getElementById('debug-log-content');
-        const primo = new Audio('https://raw.githubusercontent.com/simonevetere/XRi-helldivers-demo/main/assets/audio/2.mp3');
-        const secondo = new Audio('https://raw.githubusercontent.com/simonevetere/XRi-helldivers-demo/main/assets/audio/1.mp3');
-        const sndClick = new Audio('https://www.soundjay.com/buttons_c2026/sounds/button-3.mp3');
-        const sndError = new Audio('https://www.soundjay.com/buttons_c2026/sounds/beep-10.mp3');
-        const sndBomb = new Audio('https://cdn.pixabay.com/download/audio/2025/05/18/audio_a3b384a2d2.mp3?filename=soundreality-explosion-fx-343683.mp3');
+<div id="debug-overlay">
+    <button class="debug-close-btn" onclick="document.getElementById('debug-overlay').style.display='none'">CHIUDI</button>
+    <div id="debug-content" style="margin-top: 100px;"></div>
+</div>
 
-        // La funzione globale window.log richiesta dalle specifiche XRi
-        window.log = function(msg, colorCode = '#ffffff') {
-            logOverlay.style.display = 'flex'; // Mostra l'overlay
-            const time = new Date().toLocaleTimeString();
-            logContent.innerHTML += `<div style="color: ${colorCode}; margin-bottom: 10px;">[${time}] > ${msg}</div>`;
-            logContent.scrollTop = logContent.scrollHeight; // Scroll automatico in basso
-        };
+<script>
+const params = getUrlParams();
+log('debug mode: ' + params.debug);
+const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? '' 
+    : '/XRi-helldivers-game/'; // <-- Aggiorna questo con il path del tuo repo se serve
 
-        function closeLog() {
-            logOverlay.style.display = 'none';
+const RAW_BASE = "https://raw.githubusercontent.com/simonevetere/XRi-helldivers-demo/main/assets/3d/";
+const assetsToLoad = [
+    { id: 'map_1', url: RAW_BASE + 'map.glb' },
+    { id: 'boom_1', url: RAW_BASE + 'explosion.glb' },
+    { id: 'helldiver_base', url: RAW_BASE + 'helldiver.glb' },
+    { id: 'mothership_base', url: RAW_BASE + 'mothership.glb' },
+    { id: 'terminide_base', url: RAW_BASE + 'harvester2.glb' }
+];
+
+function updateUI(percent, text) {
+    document.getElementById('progress-bar').style.width = percent + "%";
+    document.getElementById('status-text').innerText = text;
+}
+
+async function startPreload() {
+    XRi.clearAll(); 
+    const total = assetsToLoad.length;
+
+    for (let i = 0; i < assetsToLoad.length; i++) {
+        const asset = assetsToLoad[i];
+        let assetBytes = 0;
+        let assetSizeStr = "N/A";
+
+        try {
+            const res = await fetch(asset.url, { method: 'HEAD' });
+            assetBytes = parseInt(res.headers.get('content-length') || 0);
+            assetSizeStr = (assetBytes / (1024 * 1024)).toFixed(2) + " MB";
+        } catch (e) { console.warn("Errore HEAD"); }
+
+        let secondsCounter = 0;
+        const monitorInterval = setInterval(() => {
+            const currentMbps = navigator.connection?.downlink || 1; 
+            const estimate = getDownloadEstimate(assetBytes, currentMbps, secondsCounter);
+            
+            updateUI(
+                Math.round((i / total) * 100), 
+                `Acquisizione ${asset.id}: ${estimate} - Vel: ${currentMbps}Mbps`
+            );
+            secondsCounter += 0.5;
+        }, 500);
+
+        try {
+            // Spawna i modelli fuori visuale per metterli in cache
+            current3d = await XRi.spawn(asset.id, asset.url, 0.1, { x: 0, y: -5, z: 0 });
+            current3d.setVisible(false);
+            current3d.setGrabbable(false);
+
+            clearInterval(monitorInterval);
+            log(`[OK] ${asset.id} (${assetSizeStr}) schierato`, "#00ffcc");
+        } catch (err) {
+            i = i - 1;
+            clearInterval(monitorInterval);
+            log(`[ERR] ${asset.id} fallito`, "#ff3333");
         }
+    }
 
-        // Intercettiamo gli errori nativi per spararli a schermo intero!
-        const originalError = console.error;
-        console.error = function(...args) {
-            window.log(args.join(' '), '#ff3333'); // Rosso
-            originalError.apply(console, args);
-        };
+    updateUI(100, "COMPLETATO - Attesa Ordini...");
 
-        const originalWarn = console.warn;
-        console.warn = function(...args) {
-            window.log(args.join(' '), '#ffaa00'); // Arancione
-            originalWarn.apply(console, args);
-        };
-
-
-        // ==========================================
-        // LOGICA XR
-        // ==========================================
-        let xrInitialized = false;
-        let monsterObj = null; 
-        let explosion = null;
-        const baseUrl = "https://raw.githubusercontent.com/simonevetere/XRi-helldivers-demo/main/assets/3d/";
-
-        async function initXRScene() {
-            if (xrInitialized) return; 
-            xrInitialized = true;
-            
-            window.log("Avvio sequenza XR...", "#00ffcc");
-
-            if (typeof XRi !== 'undefined') {
-                XRi.initWebXR(false);
-                
-                try {
-                    window.log("Richiesta spawn Helldivers...", "#ffe800");
-                    
-                    explosion = await XRi.spawn("boom_1", baseUrl + "explosion.glb", 1.5, {x: 0, y: -50, z: 0});
-                    explosion.setVisible(false);
-
-                    let diver_1 = await XRi.spawn("diver_1", baseUrl + "helldiver.glb", 0.1, {x: -0.1, y: 1, z: 0.2});
-                    diver_1.setGravity(true);
-
-                    let diver_2 = await XRi.spawn("diver_2", baseUrl + "helldiver.glb", 0.1, {x: 0, y: 1, z: 0.2});
-                    diver_2.setGravity(true);
-
-                    let diver_3 = await XRi.spawn("diver_3", baseUrl + "helldiver.glb", 0.1, {x: 0.1, y: 1, z: 0.2});
-                    diver_3.setGravity(true);
-                    window.log("Richiesta spawn Nave...", "#ffe800");
-                    const mothership = await XRi.spawn("mothership", baseUrl + "mothership.glb", 0.35, {x: 0, y: 1.5, z: 1.5});
-                    rotateMothership(mothership);
-
-                    window.log("Richiesta spawn Mostro...", "#ffe800");
-                    monsterObj = await XRi.spawn("terminide_1", baseUrl + "harvester2.glb", 0.2, {x: 0, y: 1, z: 0.5});
-                    await new Promise(r => setTimeout(r, 500)); 
-                    monsterObj.setGravity(true);
-                    await new Promise(r => setTimeout(r, 1000)); 
-                    await monsterObj.startAnimation("walking");
-                    walkInCircle(monsterObj);
-
-                    window.log("Tutti i modelli schierati con successo!", "#00ffcc");
-                    // closeLog(); // Decommenta questa riga se vuoi che si chiuda da solo se va tutto bene
-
-                } catch (e) {
-                    console.error("Errore critico caricamento modelli 3D: ", e);
-                }
-            } else {
-                console.warn("ATTENZIONE: Libreria XRi non trovata. Impossibile avviare il 3D.");
-            }
-        }
-
-        async function rotateMothership(ship) {
-            await ship.rotate(90, 2.0);
-            rotateMothership(ship);
-        }
-
-        async function walkInCircle(monster) {
-            if (!monster) return;
-
-            // 1. Leggiamo la posizione esatta del mostro in questo istante
-            const currentPos = await monster.getPosition();
-            
-            // Se fallisce la lettura, usiamo le coordinate di spawn come fallback
-            const startX = currentPos ? currentPos.x : 0;
-            const startZ = currentPos ? currentPos.z : 3;
-
-            let angle = 0;
-            const radius = 1.5; 
-            
-            // 2. Calcoliamo il centro del cerchio partendo dalla sua posizione attuale.
-            // Dato che all'inizio l'angolo è 0 (cos(0)=1, sin(0)=0), posizioniamo il centro 
-            // esattamente a "un raggio di distanza" sulla sinistra del mostro.
-            const centerX = startX - radius; 
-            const centerZ = startZ;
-
-            async function loop() {
-                if (!monsterObj) return; 
-
-                angle += 0.02; 
-                
-                const newX = centerX + Math.cos(angle) * radius;
-                const newZ = centerZ + Math.sin(angle) * radius;
-
-                // Ora lo spostamento inizierà in modo morbidissimo dalla sua posizione reale
-                monster.setPosition({ x: newX, y: currentPos.y, z: newZ }, 0.5);
-                
-                monster.rotate(-1.15, 0.5); 
-
-                setTimeout(loop, 500);
-            }
-
-            loop();
-        }
-
-        async function dropBombSequence() {
-            if (!monsterObj || typeof XRi === 'undefined') return; 
-
-            window.log("BOMBA SGANCIATA!", "#ff3333");
-            
-            const targetPos = await monsterObj.getPosition();
-            
-            const x = targetPos ? targetPos.x : 0;
-            const y = targetPos ? targetPos.y : 0;
-            const z = targetPos ? targetPos.z : 3;
-
-            window.log(`Coordinate acquisite: x:${x.toFixed(2)}, z:${z.toFixed(2)}`, "#00ffcc");
-
-            // 1. Spawna la bomba in alto
-            const bomb = await XRi.spawn("bomb_1", baseUrl + "bomb.glb", 0.2, {x: x, y: 2.3, z: z});
-            
-            // 2. La facciamo cadere
-            await bomb.setPosition({x: x, y: y, z: z}, 0.8);
-            
-            // 3. Appena tocca terra, distruggiamo la bomba e il mostro
-            await bomb.destroy(); 
-            await monsterObj.destroy();
-            monsterObj = null; 
-            
-            explosion.setPosition({x: x, y: y -0.3, z: z}, 0);
-            explosion.setVisible(true);
-            explosion.startAnimation("");
-            sndBomb.play();
-
-            window.log("Bersaglio neutralizzato. Per la democrazia!", "#00ffcc");
-
-            secondo.play();
-            setTimeout(async () => {
-                await explosion.setVisible(false);
-            }, 4000);
-        }
-
-        // ==========================================
-        // AVVIO E LOGICA TERMINALE
-        // ==========================================
-        document.body.addEventListener('pointerdown', initXRScene, { once: true });
-
-        // ==========================================
-        // AVVIO E LOGICA TERMINALE (STATE MACHINE)
-        // ==========================================
+    if (!params["session"]) {
+        log("Nessuna sessione attiva nell'URL", "#ffe800");
         
-        const targetSequence = ['up', 'right', 'down', 'down', 'down'];
-        let currentInput = [];
-        let gameState = "START"; // Stati possibili: "START", "READY", "PLAYING", "RESTART"        
-        const displayScreen = document.getElementById('display-screen');
-        const statusMsg = document.getElementById('status-msg');
-        const arrowSymbols = { 'up': '⬆️', 'down': '⬇️', 'left': '⬅️', 'right': '➡️' };
-
-        // Impostiamo lo stato iniziale
-        displayScreen.innerText = "START";
-        statusMsg.innerText = "PREMI START PER SCHIERARE";
-
-        // Gestione del click sullo schermo centrale (per START/RESTART)
-        displayScreen.addEventListener('pointerdown', async () => {
-            if (gameState === "START") {
-                primo.play();
-                gameState = "READY"; // Evita doppi click
-                displayScreen.innerText = "CARICAMENTO...";
-                statusMsg.innerText = "SCHIERAMENTO IN CORSO...";
-                
-                await initXRScene(); // Spawna tutto
-                
-                resetTerminal(); // Passa in stato PLAYING
-            } else if (gameState === "RESTART") {
-                gameState = "READY";
-                displayScreen.innerText = "CARICAMENTO...";
-                statusMsg.innerText = "RICHIAMO NUOVO BERSAGLIO...";
-                
-                await respawnMonster(); // Spawna solo il mostro
-                
-                resetTerminal();
-            }
-        });
-
-        // Nuova funzione per far tornare il mostro
-        async function respawnMonster() {
-            if (monsterObj) return; // Se c'è già, non fare nulla
-            
-            window.log("Richiesta spawn nuovo Mostro...", "#ffe800");
-            monsterObj = await XRi.spawn("terminide_1", baseUrl + "harvester2.glb", 0.2, {x: 0, y: 1, z: 0.5});
-            await new Promise(r => setTimeout(r, 500)); 
-            monsterObj.setGravity(true);
-            await new Promise(r => setTimeout(r, 1000)); 
-            await monsterObj.startAnimation("walking");
-            walkInCircle(monsterObj);
-            window.log("Nuovo bersaglio agganciato!", "#00ffcc");
-        }
-
-
-        function inputDirection(dir) {
-            sndClick.play();
-            if (gameState !== "PLAYING") return;
-
-            currentInput.push(dir);
-            
-            // Aggiorna lo schermo con le frecce (togliendo momentaneamente il testo se c'è)
-            displayScreen.innerText = currentInput.map(d => arrowSymbols[d]).join('');
-            
-            for (let i = 0; i < currentInput.length; i++) {
-                if (currentInput[i] !== targetSequence[i]) {
-                    errorState();
-                    return;
+        mostraMessaggio(
+            "RETE TATTICA", 
+            "Vuoi avviare una nuova missione di schieramento o unirti a una squadra esistente?", 
+            {
+                textYes: "Avvia Missione",               
+                actionYes: () => {
+                    const newId = XRi.generateId().replace("id_", "");
+                    const newParams = new URLSearchParams(window.location.search);
+                    newParams.set("session", newId);
+                    manageStorage('delete', 'local_player'); 
+                    window.location.href = basePath + "playable/name.html?" + newParams.toString();
+                },
+                textNo: "Riconnetti / Unisciti",
+                actionNo: () => {
+                    window.location.href = basePath + "/reconnect.html" + window.location.search;
                 }
             }
+        );
+    } else {
+        window.location.href = basePath + "/reconnect.html" + window.location.search;
+    }
+}
 
-            if (currentInput.length === targetSequence.length) {
-                successState();
+function getDownloadEstimate(bytes, mbps, secondsElapsed) {
+    if (!bytes || !mbps || mbps <= 0) return "Calcolo parametri...";
+    const fileMb = (bytes * 8) / (1024 * 1024);
+    const estimatedTotalSeconds = fileMb / mbps;
+    let percent = Math.round((secondsElapsed / estimatedTotalSeconds) * 100);
+    if (percent > 99) percent = 99;
+    return `${percent}% (ETA: ${Math.max(0, Math.round(estimatedTotalSeconds - secondsElapsed))}s)`;
+}
+
+window.onload = () => {
+    oldsessionplayer = getStorageData().local_player;
+    manageStorage('clear');
+    manageStorage('save', 'local_player', oldsessionplayer);
+
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    const checkReady = () => {
+        if (window.XRi) {
+            log("Inizializzazione Rete Multiplayer...", "#00ffcc");
+            XRi.initMultiplayer();
+        }
+
+        if (XRi.isReady) {
+            startPreload();
+            document.getElementById('vr-overlay').style.display = 'none'; 
+        } 
+        else {
+            attempts++;
+            if (attempts < maxAttempts) {
+                setTimeout(checkReady, 100);
+            } 
+            else {
+                mostraMessaggio(
+                    "SISTEMA XR NON RILEVATO", 
+                    "Visore tattico assente. Eseguire forzatura del sistema?", 
+                    {
+                        textNo: "Nuova Scansione",
+                        actionNo: () => { startPreload(); },
+                        textYes: "Forza Avvio",
+                        actionYes: () => { closePopup(); }
+                    }
+                );
             }
         }
+    };
+    checkReady();
+};
 
-        function errorState() {
-            sndError.play()
-            gameState = "ERROR"; // Blocca input temporaneamente
-            statusMsg.innerText = "ERRORE STRATAGEMMA!";
-            statusMsg.style.color = "#ff3333";
-            displayScreen.style.borderColor = "#ff3333";
-            setTimeout(resetTerminal, 600);
+function closePopup() {
+    document.getElementById('vr-overlay').style.display = 'none';
+    let agg = 0;
+
+    function simulateDownload() {
+        for (let i = 0; i < assetsToLoad.length; i++) {
+            const asset = assetsToLoad[i];    
+            manageStorage('save', `${asset.id}`, "true");
+            manageStorage('save', `url_${asset.id}`, asset.url);
+            log(`[OK] ${asset.id} pronto nel DB`, "#00ffcc");
         }
 
-        function successState() {
-            gameState = "BOMBING"; // Blocca input mentre cade la bomba
-            statusMsg.innerText = "BOMBA 500KG IN ARRIVO!";
-            statusMsg.style.color = "#00ffcc";
-            displayScreen.style.borderColor = "#00ffcc";
-            
-            dropBombSequence();
-            
-            // Aspetta che finisca l'esplosione prima di poter fare RESTART
-            setTimeout(() => {
-                gameState = "RESTART";
-                currentInput = [];
-                displayScreen.innerText = "RESTART";
-                statusMsg.innerText = "BERSAGLIO DISTRUTTO. PREMI PER NUOVO ROUND";
-                statusMsg.style.color = "#ffe800";
-                displayScreen.style.borderColor = "#ffe800";
-            }, 6000); // 6 secondi: 2 per far cadere la bomba + 4 di durata esplosione
+        if (agg <= 100) {
+            updateUI(agg, "Bypass di sicurezza in corso...");
+            agg += 1;
+            if (agg <= 100) {
+                setTimeout(simulateDownload, 15);
+            } else {
+                if (!params["session"]) {
+                    log("Nessuna sessione attiva nell'URL", "#ffe800");
+                    mostraMessaggio(
+                        "RETE TATTICA", 
+                        "Vuoi avviare una nuova missione o unirti a una squadra?", 
+                        {
+                            textYes: "Avvia Missione",
+                            actionYes: () => {
+                                const newId = XRi.generateId().replace("id_", "");
+                                const newParams = new URLSearchParams(window.location.search);
+                                newParams.set("session", newId);
+                                manageStorage('delete', 'local_player'); 
+                                window.location.href = basePath + "playable/name.html?" + newParams.toString();
+                            },
+                            textNo: "Riconnetti / Unisciti",
+                            actionNo: () => {
+                                window.location.href = basePath + "/reconnect.html" + window.location.search;
+                            }
+                        }
+                    );
+                } else {
+                    window.location.href = basePath + "/reconnect.html" + window.location.search;
+                }
+            }
         }
+    }
+    simulateDownload();
+}
 
-        function resetTerminal() {
-            gameState = "PLAYING";
-            currentInput = [];
-            displayScreen.innerText = '';
-            statusMsg.innerText = "INSERIRE CODICE...";
-            statusMsg.style.color = "#ffe800";
-            displayScreen.style.borderColor = "#444";
-        }
-    </script>
+window.onerror = function(message, source, lineno, colno, error) {
+    const errorMsg = `[JS ERR] ${message} (riga ${lineno}:${colno})`;
+    if (window.XRi) {
+        window.XRi._broadcast(`window.XRi._safeLog("${errorMsg}", "#ff3333");`);
+        window.XRi._safeLog(errorMsg, "#ff3333");
+    }
+    return false;
+};
+</script>
 </body>
 </html>

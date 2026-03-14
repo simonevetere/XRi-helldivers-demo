@@ -1,0 +1,28 @@
+/* DEBUG OVERLAY - OTTIMIZZATO PER VISORE */
+#debug-overlay {
+    display:none; 
+    position:fixed; 
+    top:0; left:0; 
+    width:100vw; height:100vh; 
+    background:rgba(0,0,0,0.95); 
+    z-index:10000; 
+    padding:40px; 
+    color: #00ff00; 
+    font-family: monospace; 
+    overflow-y: auto; 
+    border: 10px solid red; 
+    font-size: 2rem; 
+    line-height: 1.4;
+}
+
+.debug-close-btn {
+    position: fixed; top: 20px; right: 20px; padding: 20px 40px;
+    background: #ff4444; color: white; font-size: 2rem;
+    border: none; border-radius: 15px; cursor: pointer; z-index: 10001;
+}
+
+#debug-content div {
+    border-bottom: 1px solid #444; 
+    margin-bottom: 15px; 
+    padding-bottom: 10px;
+}

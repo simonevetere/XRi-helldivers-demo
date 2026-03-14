@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kosky's Tavern</title>
+    <script src="https://xri.onl/XRi.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Metamorphous&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style/main.css">
+    <link rel="stylesheet" href="../style/components.css">
+    <link rel="stylesheet" href="../style/debug.css">
+    <script src="../js/utils.js"></script>
+    <style>
+        .species-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px; /* Aumentato lo spazio tra le card */
+            margin-top: 50px;
+            width: 100%;
+            max-width: 1200px; /* Permette alla griglia di espandersi di più */
+        }
+
+        .species-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 4px solid rgba(255, 255, 255, 0.2); /* Bordo più spesso */
+            border-radius: 25px; /* Angoli più smussati */
+            padding: 50px 30px; /* Padding molto generoso */
+            cursor: pointer;
+            transition: all 0.2s ease-out;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 70px;
+            width: 400px;
+        }
+
+        /* Feedback visivo massiccio per il visore */
+        .species-card:hover {
+            border-color: #700f0f;
+            background: rgba(112, 15, 15, 0.4);
+            transform: scale(1.05); /* Ingrandimento invece di traslazione */
+            box-shadow: 0 0 40px rgba(112, 15, 15, 0.6);
+        }
+
+        /* Feedback al "click" del trigger del controller */
+        .species-card:active {
+            transform: scale(0.95);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .species-card h3 {
+            margin: 0;
+            font-size: 3.5rem; /* Font molto grande */
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        }
+
+        .species-card p {
+            margin: 20px 0 0;
+            font-size: 1.8rem; /* Testo leggibile a distanza VR */
+            color: #eee;
+            font-weight: bold;
+            line-height: 1.2;
+        }
+
+        /* Fix per visori con risoluzione minore o schermi stretti */
+        @media (max-width: 1000px) {
+            .species-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            .species-card {
+                min-height: 200px;
+                padding: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<h2>Scegli la tua Stirpe</h2>
+
+<div class="species-grid">
+    <div class="species-card" onclick="selectSpecies('Elfo', 'Saggezza e maestria arcana.')">
+        <h3>Elfo</h3>
+        <img src="../assets/img/elf.png">
+    </div>
+
+    <div class="species-card" onclick="selectSpecies('Umano', 'Astuzia e coraggio.')">
+        <h3>Umano</h3>
+        <img src="../assets/img/knight.png">
+    </div>
+
+    <div class="species-card" onclick="selectSpecies('Orco', 'Potenza bruta e onore dei clan.')">
+        <h3>Orco</h3>
+        <img src="../assets/img/orc.png">
+    </div>
+
+    <div class="species-card" onclick="selectSpecies('dragonide', 'Erede del soffio primordiale.')">
+        <h3>dragonide</h3>
+        <img src="../assets/img/dragon.png">
+    </div>
+</div>
+
+<div id="vr-overlay" class="overlay">
+    <div class="popup">
+        <h3></h3>
+        <p></p>
+        <div class="popup-buttons">
+            <button class="btn-no"></button>
+            <button class="btn-yes"></button>
+        </div>
+    </div>
+</div>
+
+<div id="debug-overlay">
+    <button class="debug-close-btn" onclick="document.getElementById('debug-overlay').style.display='none'">CHIUDI</button>
+    <div id="debug-content" style="margin-top: 100px;"></div>
+</div>
+
+<script>
+let selectedHeroId = null;
+let rotationInterval = null; // Variabile globale per gestire il loop
+const heroInstances = {}; 
+const params = getUrlParams();
+const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '' : '/XRi-game-example/';
+
+const heroes = [
+    { id: 'elf', name: 'Elfo', desc: 'Saggezza e maestria arcana.', x: -0.4 },
+    { id: 'dragonide', name: 'dragonide', desc: 'Erede del soffio primordiale.', x: -0.2 },
+    { id: 'knight', name: 'Umano', desc: 'Astuzia e coraggio.', x: 0.0 },
+    { id: 'troll', name: 'Orco', desc: 'Potenza bruta e onore dei clan.', x: 0.2 }
+];
+
+/**
+ * Gestisce il comportamento fisico dell'eroe quando viene selezionato
+ */
+async function handleSelection(heroId) {
+    // 1. Fermiamo immediatamente qualsiasi rotazione in corso
+    if (rotationInterval) {
+        clearInterval(rotationInterval);
+        rotationInterval = null;
+    }
+
+    // 2. Se c'era un eroe selezionato in precedenza, lo resettiamo
+    if (selectedHeroId && selectedHeroId !== heroId) {
+        const oldHero = heroes.find(h => h.id === selectedHeroId);
+        const oldInst = heroInstances[selectedHeroId];
+        if (oldInst) {
+            await oldInst.resetRotation(0.5);
+            await oldInst.setPosition({ x: oldHero.x, y: 1.1, z: 0.5 }, 0.5);
+        }
+    }
+
+    selectedHeroId = heroId;
+    const heroData = heroes.find(h => h.id === heroId);
+    const chosen = heroInstances[heroId];
+
+    if (!chosen) return;
+
+    log(`Focus su: ${heroData.name}`, "#ffff00");
+    
+    // 3. Avviamo la rotazione
+    startRotationLoop(chosen, heroId);
+
+    // 4. Mostriamo il popup
+    setTimeout(() => {
+        selectSpecies(heroData.name, heroData.desc);
+    }, 600);
+}
+
+window.handleSelection = handleSelection;
+
+function startRotationLoop(obj, heroId) {
+    let angle = 0;
+    rotationInterval = setInterval(() => {
+        // Controllo chiusura: ID cambiato o popup nascosto
+        const overlay = document.getElementById('vr-overlay');
+        if (selectedHeroId !== heroId || (overlay && overlay.style.display === 'none')) {
+            clearInterval(rotationInterval);
+            rotationInterval = null;
+            return;
+        }
+        angle = 2;
+        obj.rotate(angle, 0.05);
+    }, 50);
+}
+
+/**
+ * Gestisce la selezione definitiva
+ */
+function selectSpecies(name, description) {
+    mostraMessaggio(
+        name, 
+        `${description}\n\nConfermi di voler essere un ${name}?`, 
+        {
+            textYes: "Conferma",
+            textNo: "Annulla",
+            actionYes: async () => { // Aggiunto async qui
+                const allData = getStorageData();
+                const playerKey = `${allData.local_player}_species`;
+                
+                manageStorage('save', playerKey, name);
+                XRi._broadcast(`manageStorage('save', '${playerKey}', '${name}');`);
+
+                document.getElementById('vr-overlay').style.display = 'none';
+
+                // Nascondiamo gli altri eroi e resettiamo quello scelto
+                for (const h of heroes) {
+                    const inst = heroInstances[h.id];
+                    if (inst) {
+                        if (h.id !== selectedHeroId) {
+                            await inst.setVisible(false);
+                        } else {
+                            // Resettiamo l'eroe scelto
+                            if (rotationInterval) clearInterval(rotationInterval);
+                            await inst.resetRotation(0.2);
+                            await inst.setPosition({ x: h.x, y: 1.1, z: 0.2 }, 0);
+                            await inst.setGrabbable(false);
+                        }
+                    }
+                }
+
+                setTimeout(() => { avanti(); }, 500);
+            },
+            actionNo: () => {
+                // Se annulla, resettiamo la rotazione
+                if (rotationInterval) clearInterval(rotationInterval);
+                const current = heroInstances[selectedHeroId];
+                if (current) current.resetRotation(0.5);
+                document.getElementById('vr-overlay').style.display = 'none';
+            }
+        }
+    );
+}
+
+async function spawnAllHeroes() {
+    for (const hero of heroes) {
+        try {
+            heroInstances[hero.id] = XRi.getClassById(hero.id);
+            let current = heroInstances[hero.id];
+            
+            await current.setVisible(true);
+            await current.setPosition({ x: hero.x, y: 1.1, z: 0.5 }, 0);
+            await current.setGrabbable(true);
+            current.resetRotation(0.5);
+            current.startAnimation(""); 
+        } catch(e) { log(`Errore eroe ${hero.id}`); }
+    }
+}
+
+function avanti() {
+    mostraMessaggio("Ottima scelta", "Il tuo viaggio sta per iniziare... Un ultima cosa, sei...", {
+        textYes: "Player",
+        actionYes: () => { 
+            window.location.href = `${basePath}/playable/class.html${window.location.search}`; 
+        },
+        textNo: "Master",
+        actionNo: () => {
+            let chackmaster = getStorageData();
+            if(!chackmaster["master_id"]){
+                manageStorage('save', "master_id", chackmaster.local_player);
+                XRi._broadcast(`manageStorage('save', "master_id", "${chackmaster.local_player}")`);
+                window.location.href = `${basePath}/playable/class.html${window.location.search}`;
+            } else {
+
+                document.getElementById('vr-overlay').style.display = 'none';
+
+                setTimeout(() => {
+                    callback()
+                }, 500);
+            }
+        }
+    });
+}
+
+function callback() {
+    let chackmaster = getStorageData();
+    let master_id = chackmaster.master_id;
+    let nome_master = chackmaster[master_id];
+
+    mostraMessaggio("Ops", " sembra che il master sia "+ nome_master, {
+        textYes: "Continua",
+        actionYes: () => { 
+             window.location.href = `${basePath}/playable/class.html${window.location.search}`;
+        }}
+    );
+}
+
+window.onload = () => {
+    const check = setInterval(() => {
+        if (window.XRi) {
+            clearInterval(check);
+            XRi.initMultiplayer();
+        }
+        if(XRi.isReady){
+            spawnAllHeroes();
+        }
+    }, 200);
+};
+
+</script>
+</body>
+</html>

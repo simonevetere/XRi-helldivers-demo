@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Terminale Reclutamento - Helldivers</title>
+    <script src="https://xri.onl/XRi.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style/main.css">
+    <link rel="stylesheet" href="../style/components.css">
+    <link rel="stylesheet" href="../style/debug.css">
+    <script src="../js/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.js"></script>
+    <style>
+
+    body {
+        background-color: #050505;
+        color: white;
+        font-family: 'Share Tech Mono', monospace;
+    }
+
+    .container {
+        width: 90%;
+        max-width: 600px;
+        text-align: center;
+        margin: 0 auto;
+    }
+
+    h2 {
+        color: #ffe800;
+        text-transform: uppercase;
+        letter-spacing: 5px;
+        text-shadow: 0 0 15px rgba(255, 232, 0, 0.4);
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+    }
+
+    /* Stile per l'input */
+    .input-field {
+        width: 100%;
+        padding: 20px;
+        font-size: 2rem;
+        background-color: #111;
+        color: #00ffcc;
+        border: 2px solid #ffe800;
+        border-radius: 5px;
+        margin-bottom: 30px;
+        outline: none;
+        box-sizing: border-box;
+        text-align: center;
+        font-family: 'Share Tech Mono', monospace;
+        text-transform: uppercase;
+        box-shadow: inset 0 0 15px rgba(0,0,0,0.8);
+    }
+
+    .input-field:focus {
+        border-color: #00ffcc;
+        box-shadow: 0 0 15px rgba(0, 255, 204, 0.3);
+    }
+
+    /* Contenitore della tastiera */
+    .simple-keyboard {
+        max-width: 100%;
+        background-color: rgba(15, 15, 15, 0.95) !important;
+        border: 2px solid #444;
+        border-radius: 10px;
+        box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        padding: 10px;
+    }
+
+    /* Ripristina il layout orizzontale della tastiera */
+    .hg-row {
+        display: flex !important;
+        flex-direction: row !important;
+        margin-bottom: 5px;
+        justify-content: center;
+    }
+
+    /* Definisce il bordo e lo stile dei singoli tasti */
+    .hg-button {
+        flex-grow: 1;
+        height: 60px !important;
+        margin: 3px !important;
+        background: #222 !important;
+        border: 1px solid #444 !important; 
+        border-radius: 5px !important;
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        color: #ffe800 !important;
+        font-family: 'Share Tech Mono', monospace;
+        font-size: 1.5rem !important;
+        text-transform: uppercase;
+        box-shadow: 0 4px 0 #111 !important;
+        cursor: pointer;
+        transition: 0.1s;
+    }
+
+    /* Effetto al click */
+    .hg-button:active {
+        background: #ffe800 !important;
+        color: #000 !important;
+        transform: translateY(4px);
+        box-shadow: 0 0 0 #111 !important;
+    }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Identificazione Operativo</h2>
+    <input class="input-field" placeholder="INSERISCI ID..." inputmode="none" />
+    
+    <div class="simple-keyboard"></div>
+</div>
+
+<div id="vr-overlay" class="overlay">
+    <div class="popup">
+        <h3></h3>
+        <p></p>
+        <div class="popup-buttons">
+            <button class="btn-no"></button>
+            <button class="btn-yes"></button>
+        </div>
+    </div>
+</div>
+
+<div id="debug-overlay">
+    <button class="debug-close-btn" onclick="document.getElementById('debug-overlay').style.display='none'">CHIUDI</button>
+    <div id="debug-content" style="margin-top: 100px;"></div>
+</div>
+
+<script>
+const params = getUrlParams();
+log('debug mode: ' + params.debug);
+// Controlla e aggiorna la cartella del tuo progetto!
+const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? '' 
+    : '/XRi-helldivers-game/'; 
+
+const Keyboard = window.SimpleKeyboard.default;
+
+// Inizializzazione tastiera
+const myKeyboard = new Keyboard({
+    onChange: input => onChange(input),
+    onKeyPress: button => onKeyPress(button),
+    layout: {
+        'default': [
+            'q w e r t y u i o p',
+            'a s d f g h j k l',
+            'z x c v b n m {backspace}',
+            '{enter}'
+        ]
+    },
+    display: {
+        '{backspace}': 'CANC',
+        '{enter}':'CONFERMA ID'
+    }
+});
+
+/**
+ * Sincronizza la tastiera con l'input
+ */
+document.querySelector(".input-field").addEventListener("input", event => {
+    myKeyboard.setInput(event.target.value.toUpperCase());
+});
+
+function onChange(input) {
+    document.querySelector(".input-field").value = input.toUpperCase();
+}
+
+function onKeyPress(button) {
+    if (button === "{enter}") {
+        const inputField = document.querySelector(".input-field");
+        const playerName = inputField.value.trim().toUpperCase();
+
+        if (playerName === "") {
+            mostraMessaggio("ERRORE DI SISTEMA", "Inserisci un identificativo valido prima di procedere allo schieramento.", { textYes: "RICEVUTO" });
+            return;
+        }
+
+        const allData = getStorageData();
+        
+        let playerIndex = 1;
+        while (allData[`player_${playerIndex}`]) {
+            playerIndex++;
+        }
+
+        const newKey = `player_${playerIndex}`;
+
+        manageStorage('save', newKey, playerName);
+        if(window.XRi) XRi._broadcast(`manageStorage('save', '${newKey}', '${playerName}');`);
+        manageStorage('save', 'local_player', newKey);
+
+        log(`Identificativo accettato: ${newKey} = ${playerName}`, "#00ffcc");
+
+        mostraMessaggio(
+            "REGISTRAZIONE COMPLETATA", 
+            `Benvenuto negli Helldiver, Operativo ${playerName}! Sei pronto a diffondere la Democrazia Controllata?`, 
+            {
+                textYes: "PER LA SUPER TERRA",
+                actionYes: () => { 
+                    // Indirizza alla pagina di gioco
+                    window.location.href = `${basePath}class.html${window.location.search}`; 
+                },
+                textNo: "ANNULLA",
+                actionNo: () => {
+                    manageStorage('delete', newKey);
+                    document.getElementById('vr-overlay').style.display = 'none';
+                }
+            }
+        );
+    }
+}
+
+window.onload = () => {
+    if (window.XRi) XRi.initMultiplayer();
+};
+
+</script>
+</body>
+</html>

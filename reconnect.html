@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Reconnect - Kosky's Tavern</title>
+    <script src="https://xri.onl/XRi.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Metamorphous&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style/main.css">
+    <link rel="stylesheet" href="../style/components.css">
+    <link rel="stylesheet" href="../style/debug.css">
+    <script src="../js/utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/simple-keyboard@latest/build/index.js"></script>
+    <style>
+        .container { width: 90%; text-align: center; margin-top: 50px; }
+        .input-field { 
+            width: 100%; padding: 15px; font-size: 1.2rem; border: 2px solid #ddd; 
+            border-radius: 8px; margin-bottom: 20px; text-align: center; font-family: "Metamorphous", serif;
+        }
+        #player-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .player-card {
+            background: rgba(255,255,255,0.1);
+            border: 2px solid #fff;
+            padding: 20px;
+            color: white;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: transform 0.2s;
+        }
+        .player-card:active { transform: scale(0.95); background: rgba(0,255,0,0.2); }
+        .simple-keyboard { max-width: 100%; background-color: rgba(255, 255, 255, 0.95); border-radius: 10px; padding: 10px; }
+        .hg-button { flex-grow: 1; height: 50px !important; margin: 3px !important; background: white !important; border: 1px solid #ccc !important; border-radius: 5px !important; display: flex !important; align-items: center; justify-content: center; color: #333 !important; cursor: pointer; }
+        .hg-row { display: flex !important; flex-direction: row !important; margin-bottom: 5px; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<div class="container" id="step-session">
+    <h2>Inserisci Codice Sessione</h2>
+    <input class="input-field" id="session-input" placeholder="Codice Stanza..." inputmode="none" />
+    <div class="simple-keyboard"></div>
+</div>
+
+<div class="container" id="step-player" style="display:none;">
+    <h2>Chi sei?</h2>
+    <div id="player-selection"></div>
+</div>
+
+<div id="vr-overlay" class="overlay">
+    <div class="popup">
+        <h3></h3><p></p>
+        <div class="popup-buttons">
+            <button class="btn-no"></button>
+            <button class="btn-yes"></button>
+        </div>
+    </div>
+</div>
+
+<script>
+const params = getUrlParams();
+const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '' : '/XRi-game-example/';
+const Keyboard = window.SimpleKeyboard.default;
+let currentSessionId = "";
+
+const myKeyboard = new Keyboard({
+    onChange: input => document.getElementById("session-input").value = input,
+    onKeyPress: button => {
+        if (button === "{enter}") connectToSession();
+    },
+    layout: { 
+        'default': [
+            '1 2 3 4 5 6 7 8 9 0',
+            'q w e r t y u i o p', 
+            'a s d f g h j k l', 
+            'z x c v b n m {backspace}', 
+            '{enter}'
+        ] 
+    },
+    display: { 
+        '{backspace}': '⌫', 
+        '{enter}': 'Connetti' 
+    }
+});
+
+async function connectToSession() {
+    currentSessionId = document.getElementById("session-input").value.trim();
+    if (!currentSessionId) return;
+
+    log("Connettendo a: " + currentSessionId, "#ffff00");
+    
+    if (window.XRi) {
+        XRi.initMultiplayer(currentSessionId);
+        setTimeout(showPlayerSelection, 2000); 
+    }
+}
+
+function showPlayerSelection() {
+    let allData = getStorageData();
+    const container = document.getElementById("player-selection");
+    container.innerHTML = "";
+    
+    // Costruiamo la query string corretta
+    const urlParams = new URLSearchParams();
+    urlParams.set("session", currentSessionId);
+    if (params.debug) urlParams.set("debug", params.debug);
+    const queryString = "?" + urlParams.toString();
+
+    // Tasto Nuovo Giocatore (Caso 3)
+    const newPlayerCard = document.createElement("div");
+    newPlayerCard.className = "player-card";
+    newPlayerCard.style.borderColor = "#00ff00";
+    newPlayerCard.innerHTML = `<strong>+ NUOVO GIOCATORE</strong>`;
+    newPlayerCard.onclick = () => {
+        manageStorage('delete', 'local_player');
+        window.location.href = basePath + "playable/name.html" + queryString;
+    };
+    container.appendChild(newPlayerCard);
+
+    let found = false;
+    Object.keys(allData).forEach(key => {
+        if (key.startsWith("player_") && !key.includes("_class") && !key.includes("_species") && key !== "player_") {
+            found = true;
+            const playerName = allData[key];
+            const card = document.createElement("div");
+            card.className = "player-card";
+            card.innerHTML = `<strong>${playerName}</strong>`;
+            card.onclick = () => selectThisPlayer(key, queryString);
+            container.appendChild(card);
+        }
+    });
+
+    document.getElementById("step-session").style.display = "none";
+    document.getElementById("step-player").style.display = "block";
+}
+
+function selectThisPlayer(playerKey, queryString) {
+    let allData = getStorageData();
+    manageStorage('save', 'local_player', playerKey);
+
+    const pClass = allData[`${playerKey}_class`];
+    const pSpecies = allData[`${playerKey}_species`];
+    const pName = allData[playerKey];
+
+    let targetPage = "name.html";
+    if (pClass) targetPage = "../game.html"; 
+    else if (pName && !pSpecies) targetPage = "species.html";
+    else if (pSpecies) targetPage = "class.html";
+
+    // Calcolo percorso finale
+    const finalPath = targetPage.startsWith("..") ? basePath + "game.html" : basePath + "playable/" + targetPage;
+
+    mostraMessaggio("Bentornato", `Accesso come ${pName}`, {
+        textYes: "Entra",
+        actionYes: () => { window.location.href = finalPath + queryString; }
+    });
+}
+
+window.onload = () => { 
+    if (window.XRi) {
+        XRi.initMultiplayer(); 
+        let param = getUrlParams();
+        if(param.session){
+            document.getElementById("session-input").value = param.session;
+            connectToSession();
+        }
+    }
+};
+</script>
+</body>
+</html>

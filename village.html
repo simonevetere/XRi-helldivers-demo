@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Village - Kosky's Tavern</title>
+    <script src="https://xri.onl/XRi.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Metamorphous&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style/main.css">
+    <link rel="stylesheet" href="style/components.css">
+    <link rel="stylesheet" href="style/debug.css">
+    <script src="js/utils.js"></script>
+    <style>
+        body { background-color: transparent; margin: 0; overflow: hidden; }
+        
+        .dashboard-container {
+            width: 95%; height: 85vh; margin: 2vh auto;
+            background: rgba(20, 20, 20, 0.85); border: 3px solid #700f0f;
+            border-radius: 10px; display: flex; flex-direction: column;
+            font-family: 'Metamorphous', serif; color: #e0e0e0;
+            box-shadow: 0 0 30px rgba(0,0,0,0.9);
+        }
+
+        .tab-bar { display: flex; background: rgba(112, 15, 15, 0.3); border-bottom: 2px solid #700f0f; flex-shrink: 0; }
+        .tab-btn {
+            flex: 1; padding: 25px; border: none; background: none; color: #aaa;
+            font-family: 'Metamorphous', serif; font-size: 1.8rem; cursor: pointer;
+            text-transform: uppercase; transition: all 0.3s;
+        }
+        .tab-btn.active { color: #ffcc00; background: rgba(112, 15, 15, 0.5); text-shadow: 0 0 15px #ffcc00; }
+
+        /* Nessun overflow qui, così i contenitori interni gestiscono il proprio scroll */
+        .tab-content { flex: 1; padding: 40px; display: none; overflow: hidden; height: 100%; box-sizing: border-box; }
+        .tab-content.active { display: block; }
+
+        .ui-table { width: 100%; border-collapse: collapse; font-size: 1.5rem; }
+        .ui-table th { color: #ffcc00; text-align: left; padding: 20px; border-bottom: 3px solid #700f0f; }
+        .ui-table td { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .status-tag { background: #00ff00; color: black; padding: 5px 12px; border-radius: 6px; font-weight: bold; }
+
+        /* LAYOUT INVENTARIO */
+        .inventory-layout { display: flex; justify-content: space-between; gap: 40px; height: 100%; }
+
+        /* EQUIPAGGIAMENTO (Fisso a sinistra) */
+        .equipment-section {
+            flex: 1; display: flex; justify-content: center; align-items: center; gap: 40px;
+            background: rgba(255,255,255,0.03); padding: 40px; border-radius: 15px; border: 2px solid #444;
+        }
+        .equip-column { display: flex; flex-direction: column; gap: 20px; align-items: center; justify-content: center; }
+        
+        .equip-slot {
+            background: rgba(0,0,0,0.6); border: 3px solid #700f0f;
+            display: flex; align-items: center; justify-content: center;
+            color: #888; transition: border-color 0.3s; cursor: pointer;
+            position: relative;
+        }
+        .equip-slot:hover { border-color: #ffcc00; }
+        .equip-slot.selected { border-color: #00ff00; box-shadow: 0 0 20px rgba(0,255,0,0.5); }
+        .equip-slot span { font-size: 1.2rem; text-transform: uppercase; font-weight: bold; position: absolute; z-index: 1; pointer-events: none; opacity: 0.5; }
+        /* EQUIPAGGIAMENTO: Dimensioni dinamiche in percentuale (vh) */
+        .equip-slot.head { width: 12vh; height: 12vh; border-radius: 1vh; }
+        .equip-slot.large { width: 14vh; height: 28vh; border-radius: 1vh; }
+        .equip-slot.x-large { width: 16vh; height: 22vh; border-radius: 1vh; }
+        .equip-slot.potion { width: 16vh; height: 8vh; border-radius: 1vh; }
+
+        /* Divisorio dinamico */
+        .divider-vertical { 
+            width: 0.4vw; /* Larghezza in percentuale dello schermo */
+            min-width: 4px; /* Non diventa mai troppo sottile */
+            background: #700f0f; 
+            border-radius: 2px; 
+            flex-shrink: 0; 
+        }
+        /* ZAINO E FILTRI (Scorrevole) */
+        .backpack-section { flex: 1; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+        
+        .filters-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-shrink: 0; }
+        .filter-btn {
+            background: rgba(0,0,0,0.8); border: 2px solid #444; color: white;
+            padding: 10px 20px; font-family: 'Metamorphous', serif; font-size: 1.2rem;
+            border-radius: 8px; cursor: pointer; flex: 1; transition: 0.2s;
+        }
+        .filter-btn.active { border-color: #ffcc00; color: #ffcc00; background: rgba(112, 15, 15, 0.4); }
+
+        /* GRIGLIA ZAINO (Unica parte con scroll) */
+        .inventory-grid {
+            display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
+            background: #111; padding: 20px; border: 3px solid #333;
+            border-radius: 15px; flex-grow: 1; align-content: start;
+            overflow-y: auto; 
+        }
+        
+        /* Scrollbar personalizzata stile taverna */
+        .inventory-grid::-webkit-scrollbar { width: 16px; }
+        .inventory-grid::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 8px; }
+        .inventory-grid::-webkit-scrollbar-thumb { background: #700f0f; border-radius: 8px; border: 2px solid #1a1a1a; }
+        .inventory-grid::-webkit-scrollbar-thumb:hover { background: #ffcc00; }
+
+        .inv-slot {
+            aspect-ratio: 1/1; background: rgba(40,40,40,0.8); border: 2px solid #222;
+            border-radius: 8px; transition: border-color 0.2s; cursor: pointer;
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .inv-slot:hover { border-color: #ffcc00; }
+        .inv-slot.selected { border-color: #00ff00; box-shadow: 0 0 15px rgba(0,255,0,0.5); }
+        .inv-slot.hidden { display: none; }
+
+        .item-img { max-width: 80%; max-height: 80%; object-fit: contain; z-index: 2; pointer-events: none; }
+
+        /* STATISTICHE */
+        .stats-box { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; padding: 20px; }
+        .stat-row { 
+            background: rgba(255,255,255,0.05); padding: 25px; border-radius: 10px; 
+            display: flex; justify-content: space-between; font-size: 1.8rem; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .stat-val { color: #00ff00; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="dashboard-container">
+    <div class="tab-bar">
+        <button class="tab-btn" onclick="openTab('giocatori')">Giocatori</button>
+        <button class="tab-btn active" onclick="openTab('inventario')">Inventario</button>
+        <button class="tab-btn" onclick="openTab('personaggio')">Personaggio</button>
+    </div>
+
+    <div id="giocatori" class="tab-content">
+        <div style="overflow-y: auto; height: 100%;">
+            <table class="ui-table">
+                <thead><tr><th>Eroe</th><th>Stirpe</th><th>Classe</th><th>Stato</th></tr></thead>
+                <tbody id="player-list-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="inventario" class="tab-content active">
+        <div class="inventory-layout">
+            
+            <div class="equipment-section">
+                <div class="equip-column">
+                    <div class="equip-slot large" data-equip-type="arma" id="eq-arma-sx" onclick="handleSlotClick('equip', 'arma-sx')"><span>Arma Sx</span></div>
+                </div>
+                <div class="equip-column">
+                    <div class="equip-slot head" data-equip-type="testa" id="eq-testa" onclick="handleSlotClick('equip', 'testa')"><span>Testa</span></div>
+                    <div class="equip-slot x-large" data-equip-type="torso" id="eq-torso" onclick="handleSlotClick('equip', 'torso')"><span>Torso</span></div>
+                    <div style="display: flex; gap: 2vh; justify-content: center;">
+                        <div class="equip-slot potion" data-equip-type="pozione" id="eq-pozione-1" onclick="handleSlotClick('equip', 'pozione-1')"><span>Poz.</span></div>
+                        <div class="equip-slot potion" data-equip-type="pozione" id="eq-pozione-2" onclick="handleSlotClick('equip', 'pozione-2')"><span>Poz.</span></div>
+                    </div>
+                </div>
+                <div class="equip-column">
+                    <div class="equip-slot large" data-equip-type="arma" id="eq-arma-dx" onclick="handleSlotClick('equip', 'arma-dx')"><span>Arma Dx</span></div>
+                </div>
+            </div>
+
+            <div class="divider-vertical"></div>
+
+            <div class="backpack-section">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-shrink: 0;">
+                    <h3 style="color: #ffcc00; margin: 0; font-size: 2rem;">Zaino</h3>
+                    <div style="font-size: 1.8rem;">Oro: <span style="color: gold; font-weight: bold;">5069</span></div>
+                </div>
+                
+                <div class="filters-bar">
+                    <button class="filter-btn active" onclick="setFilter('all', this)">Tutti</button>
+                    <button class="filter-btn" onclick="setFilter('arma', this)">Armi</button>
+                    <button class="filter-btn" onclick="setFilter('testa', this)">Testa</button>
+                    <button class="filter-btn" onclick="setFilter('torso', this)">Torso</button>
+                </div>
+
+                <div class="inventory-grid" id="inv-grid">
+                    </div>
+            </div>
+
+        </div>
+    </div>
+
+    <div id="personaggio" class="tab-content">
+        <div style="overflow-y: auto; height: 100%;">
+            <div class="stats-box">
+                <div class="stat-row"><span>Forza</span><span class="stat-val">X</span></div>
+                <div class="stat-row"><span>Destrezza</span><span class="stat-val">X</span></div>
+                <div class="stat-row"><span>Vitalità</span><span class="stat-val">X</span></div>
+                <div class="stat-row"><span>Energia</span><span class="stat-val">X</span></div>
+                <div class="stat-row"><span>Attacco</span><span class="stat-val">X - X</span></div>
+                <div class="stat-row"><span>Difesa</span><span class="stat-val">X</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div id="vr-overlay" class="overlay">
+    <div class="popup">
+        <h3></h3>
+        <p></p>
+        <div class="popup-buttons">
+            <button class="btn-no"></button>
+            <button class="btn-yes"></button>
+        </div>
+    </div>
+</div>
+
+<div id="debug-overlay">
+    <button class="debug-close-btn" onclick="document.getElementById('debug-overlay').style.display='none'">CHIUDI</button>
+    <div id="debug-content" style="margin-top: 100px;"></div>
+</div>
+
+
+<script>
+// --- LOGICA GIOCO E XRi ---
+const params = getUrlParams();
+const RAW_BASE = "https://raw.githubusercontent.com/simonevetere/XRi-game-example/main/assets/3d/";
+let villageObj = null;
+const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '' : '/XRi-game-example/';
+
+async function initScene() {
+    log("Caricamento villaggio...", "#ffff00");
+    try {
+        villageObj = XRi.getClassById("village");
+        await villageObj.setVisible(true);
+        await villageObj.setPosition({ x: 0, y: 1.1, z: 0.8 }, 0.5);
+        await villageObj.setGrabbable(true);
+        
+        mostraMessaggio(
+            "Setup Tavolo", 
+            "Posiziona il villaggio. Conferma per far entrare il tuo eroe.", 
+            {
+                textYes: "Conferma",
+                actionYes: async () => {
+                    await villageObj.setGrabbable(false);
+                    setupPlayer();
+                }
+            }
+        );
+    } catch (e) { log("Errore: " + e, "#ff0000"); }
+}
+
+async function setupPlayer() {
+    const data = getStorageData();
+    const localKey = data.local_player;
+    const species = (data[`${localKey}_species`] || 'knight').toLowerCase();
+    
+    const modelMap = { 'elfo': 'elf', 'umano': 'knight', 'orco': 'troll', 'dragonide': 'dragonide' };
+    const modelId = modelMap[species] || 'knight';
+
+    try {
+        const playerHero = XRi.getClassById(modelId);
+        await playerHero.parent('village');
+        await playerHero.move({ x: 0, y: 0.3, z: 0 }, 0);
+        await playerHero.setGravity(true);
+        await playerHero.setGrabbable(true);
+        
+        log("Eroe pronto sul campo!", "#00ff00");
+        renderPlayerTable();
+    } catch (e) { log("Errore Spawn Eroe: " + e, "#ff0000"); }
+}
+
+function renderPlayerTable() {
+    const allData = getStorageData();
+    const tbody = document.getElementById('player-list-body');
+    if(!tbody) return;
+    
+    tbody.innerHTML = ""; // Svuota la tabella prima di riempirla
+    
+    Object.keys(allData).forEach(key => {
+        // Cerchiamo le chiavi base dei giocatori (es: "player_1", "player_2")
+        // Devono iniziare con "player_" MA non devono finire con "_species" o "_class"
+        if (key.startsWith("player_") && !key.endsWith("_species") && !key.endsWith("_class")) {
+            
+            const name = allData[key];
+            
+            // Assicuriamoci che il nome esista e sia una stringa
+            if(name && typeof name === 'string') {
+                 // Recuperiamo stirpe e classe usando la chiave base
+                 const species = allData[`${key}_species`] || "Sconosciuta";
+                 const pClass = allData[`${key}_class`] || "In attesa...";
+                 const isLocal = key === allData.local_player;
+
+                 const row = `
+                     <tr>
+                         <td><strong>${name} ${isLocal ? '(Tu)' : ''}</strong></td>
+                         <td>${species}</td>
+                         <td>${pClass}</td>
+                         <td><span class="status-tag">Online</span></td>
+                     </tr>
+                 `;
+                 tbody.innerHTML += row;
+            }
+        }
+    });
+}
+
+// --- LOGICA UI TAB ---
+function openTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+
+// --- SISTEMA INVENTARIO ---
+const ITEM_DB = {
+    'spada':   { id: 'spada', name: 'Spada Lunga', type: 'arma', img: 'assets/img/sword.png' },
+    'pugnale': { id: 'pugnale', name: 'Pugnale Veloce', type: 'arma', img: 'assets/img/dagger.png' },
+    'bastone': { id: 'bastone', name: 'Bastone Arcano', type: 'arma', img: 'assets/img/stick.png' },
+    'campana': { id: 'campana', name: 'Campana Sacra', type: 'arma', img: 'assets/img/bell.png' }
+};
+
+const backpackSize = 80; 
+let backpack = new Array(backpackSize).fill(null);
+let equipment = { 'arma-sx': null, 'arma-dx': null, 'testa': null, 'torso': null, 'pozione-1': null, 'pozione-2': null };
+
+// Popola oggetti finti per testare
+for(let i=0; i < 25; i++) {
+    const keys = Object.keys(ITEM_DB);
+    const randomKey = keys[Math.floor(Math.random() * keys.length)];
+    backpack[i] = ITEM_DB[randomKey];
+}
+
+let selectedSlot = null; 
+let currentFilter = 'all';
+
+// Inizializza Griglia
+const invGrid = document.getElementById('inv-grid');
+for(let i = 0; i < backpackSize; i++) {
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot';
+    slot.id = `bp-${i}`;
+    slot.onclick = () => handleSlotClick('backpack', i);
+    invGrid.appendChild(slot);
+}
+
+function renderInventory() {
+    for(let i = 0; i < backpackSize; i++) {
+        const slotEl = document.getElementById(`bp-${i}`);
+        const item = backpack[i];
+        
+        slotEl.innerHTML = '';
+        slotEl.classList.remove('selected', 'hidden');
+
+        if (item) {
+            slotEl.innerHTML = `<img src="${item.img}" class="item-img" alt="${item.name}">`;
+            if (currentFilter !== 'all' && item.type !== currentFilter) {
+                slotEl.classList.add('hidden');
+            }
+        } else if (currentFilter !== 'all') {
+            slotEl.classList.add('hidden');
+        }
+        
+        if (selectedSlot && selectedSlot.source === 'backpack' && selectedSlot.index === i) {
+            slotEl.classList.add('selected');
+        }
+    }
+
+    for (const [key, item] of Object.entries(equipment)) {
+        const eqEl = document.getElementById(`eq-${key}`);
+        const label = eqEl.querySelector('span').outerHTML;
+        eqEl.innerHTML = label;
+        eqEl.classList.remove('selected');
+
+        if (item) {
+            eqEl.innerHTML += `<img src="${item.img}" class="item-img" alt="${item.name}">`;
+            eqEl.querySelector('span').style.opacity = '0';
+        } else {
+            eqEl.querySelector('span').style.opacity = '0.5';
+        }
+
+        if (selectedSlot && selectedSlot.source === 'equip' && selectedSlot.index === key) {
+            eqEl.classList.add('selected');
+        }
+    }
+}
+
+function handleSlotClick(source, index) {
+    const clickedItem = source === 'backpack' ? backpack[index] : equipment[index];
+
+    if (!selectedSlot && !clickedItem) return;
+
+    if (selectedSlot && selectedSlot.source === source && selectedSlot.index === index) {
+        selectedSlot = null;
+        renderInventory();
+        return;
+    }
+
+    if (!selectedSlot) {
+        selectedSlot = { source, index };
+        renderInventory();
+        return;
+    }
+
+    const sourceItem = selectedSlot.source === 'backpack' ? backpack[selectedSlot.index] : equipment[selectedSlot.index];
+    const targetElType = source === 'equip' ? document.getElementById(`eq-${index}`).getAttribute('data-equip-type') : null;
+    const sourceElType = selectedSlot.source === 'equip' ? document.getElementById(`eq-${selectedSlot.index}`).getAttribute('data-equip-type') : null;
+
+    if (sourceItem && source === 'equip' && sourceItem.type !== targetElType) {
+        selectedSlot = null;
+        renderInventory();
+        return;
+    }
+    
+    if (clickedItem && selectedSlot.source === 'equip' && clickedItem.type !== sourceElType) {
+        selectedSlot = null;
+        renderInventory();
+        return;
+    }
+
+    if (selectedSlot.source === 'backpack' && source === 'equip') {
+        backpack[selectedSlot.index] = clickedItem;
+        equipment[index] = sourceItem;
+    } 
+    else if (selectedSlot.source === 'equip' && source === 'backpack') {
+        equipment[selectedSlot.index] = clickedItem;
+        backpack[index] = sourceItem;
+    }
+    else if (selectedSlot.source === 'backpack' && source === 'backpack') {
+        backpack[selectedSlot.index] = clickedItem;
+        backpack[index] = sourceItem;
+    }
+    else if (selectedSlot.source === 'equip' && source === 'equip') {
+        if(sourceItem.type === targetElType) {
+            equipment[selectedSlot.index] = clickedItem;
+            equipment[index] = sourceItem;
+        }
+    }
+
+    selectedSlot = null;
+    renderInventory();
+}
+
+function setFilter(type, btnElement) {
+    currentFilter = type;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btnElement.classList.add('active');
+    selectedSlot = null; 
+    renderInventory();
+}
+
+renderInventory();
+renderPlayerTable();
+
+window.onload = () => {
+    const check = setInterval(() => {
+        if (window.XRi) {
+            clearInterval(check);
+            XRi.initMultiplayer();
+        }
+        if(XRi.isReady) {
+            initScene();
+        }
+    }, 200);
+    setInterval(() => {renderPlayerTable()}, 200);
+};
+</script>
+</body>
+</html>
