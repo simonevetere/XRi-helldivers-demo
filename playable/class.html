@@ -155,7 +155,11 @@
 let selectedHeroId = null;
 const heroInstances = {}; 
 const params = getUrlParams();
-const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? '' : '/XRi-helldivers-game/';
+
+const basePath = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? '' 
+    : '/XRi-helldivers-demo/';
+
 
 // Assicurati che questi 'id' corrispondano ai modelli 3D precaricati nel tuo loader!
 const heroes = [
