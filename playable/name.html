@@ -22,8 +22,8 @@
     }
 
     .container {
-        width: 90%;
-        max-width: 600px;
+        width: 95%;
+        max-width: 1000px; /* Aumentato drasticamente da 600px a 1000px */
         text-align: center;
         margin: 0 auto;
     }
@@ -33,15 +33,15 @@
         text-transform: uppercase;
         letter-spacing: 5px;
         text-shadow: 0 0 15px rgba(255, 232, 0, 0.4);
-        font-size: 2.5rem;
+        font-size: 3.5rem; /* Leggermente più grande */
         margin-bottom: 20px;
     }
 
     /* Stile per l'input */
     .input-field {
         width: 100%;
-        padding: 20px;
-        font-size: 2rem;
+        padding: 25px;
+        font-size: 3rem; /* Font più grande per bilanciare la nuova tastiera */
         background-color: #111;
         color: #00ffcc;
         border: 2px solid #ffe800;
@@ -67,33 +67,33 @@
         border: 2px solid #444;
         border-radius: 10px;
         box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        padding: 10px;
+        padding: 15px; /* Più respiro interno */
     }
 
     /* Ripristina il layout orizzontale della tastiera */
     .hg-row {
         display: flex !important;
         flex-direction: row !important;
-        margin-bottom: 5px;
+        margin-bottom: 8px; /* Più spazio tra le righe */
         justify-content: center;
     }
 
     /* Definisce il bordo e lo stile dei singoli tasti */
     .hg-button {
         flex-grow: 1;
-        height: 60px !important;
-        margin: 3px !important;
+        height: 85px !important; /* Aumentato da 60px a 85px! */
+        margin: 4px !important; /* Più margine tra i tasti */
         background: #222 !important;
         border: 1px solid #444 !important; 
-        border-radius: 5px !important;
+        border-radius: 8px !important;
         display: flex !important;
         align-items: center;
         justify-content: center;
         color: #ffe800 !important;
         font-family: 'Share Tech Mono', monospace;
-        font-size: 1.5rem !important;
+        font-size: 2.2rem !important; /* Font molto più grande e leggibile */
         text-transform: uppercase;
-        box-shadow: 0 4px 0 #111 !important;
+        box-shadow: 0 5px 0 #111 !important; /* Ombra più profonda per l'effetto tattile */
         cursor: pointer;
         transition: 0.1s;
     }
@@ -102,7 +102,7 @@
     .hg-button:active {
         background: #ffe800 !important;
         color: #000 !important;
-        transform: translateY(4px);
+        transform: translateY(5px);
         box-shadow: 0 0 0 #111 !important;
     }
     </style>
