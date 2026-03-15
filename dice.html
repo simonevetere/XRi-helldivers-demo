@@ -286,14 +286,14 @@
         }
         finalHtml += "</div>";
         finalHtml += `<div class='total-result'>TOTALE IMPATTO: ${total}</div>`;
-        
+        /*
         const allData = getStorageData();
         const dice = `${allData.local_player}_dice`;
         
         // Salvataggio nel DB locale e in rete
         manageStorage('save', `${total}`, `${allData.local_player}`);
         if(window.XRi) XRi._broadcast(`manageStorage('save', '${total}', '${allData.local_player}');`);
-
+        */
         display.innerHTML = finalHtml;
         display.style.borderColor = "#00ffcc";
         
