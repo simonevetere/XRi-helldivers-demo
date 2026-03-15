@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Calcolo Balistico - Helldivers</title>
+    <script src="https://xri.onl/XRi.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../style/main.css">
+    <link rel="stylesheet" href="../style/components.css">
+    <link rel="stylesheet" href="../style/debug.css">
+    <script src="../js/utils.js"></script>
+    <style>
+
+    body {
+        background-color: #050505;
+        color: white;
+        font-family: 'Share Tech Mono', monospace;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100vh;
+        margin: 0;
+    }
+
+    .container {
+        width: 95%;
+        max-width: 800px;
+        text-align: center;
+        background: rgba(15, 15, 15, 0.9);
+        border: 2px solid #444;
+        border-radius: 10px;
+        padding: 40px;
+        box-shadow: 0 0 30px rgba(0,0,0,0.8);
+    }
+
+    h2 {
+        color: #ffe800;
+        text-transform: uppercase;
+        letter-spacing: 5px;
+        text-shadow: 0 0 15px rgba(255, 232, 0, 0.4);
+        font-size: 3rem;
+        margin-top: 0;
+        margin-bottom: 30px;
+    }
+
+    .section-title {
+        color: #00ffcc;
+        font-size: 1.5rem;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+    }
+
+    /* Gruppi di pulsanti */
+    .btn-group {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-bottom: 40px;
+        flex-wrap: wrap;
+    }
+
+    .btn-select {
+        background: #111;
+        color: #fff;
+        border: 2px solid #444;
+        border-radius: 8px;
+        padding: 15px 30px;
+        font-size: 2rem;
+        font-family: 'Share Tech Mono', monospace;
+        cursor: pointer;
+        transition: 0.1s;
+        min-width: 80px;
+        box-shadow: 0 4px 0 #000;
+    }
+
+    .btn-select:hover {
+        border-color: #ffe800;
+        color: #ffe800;
+    }
+
+    .btn-select:active {
+        transform: translateY(4px);
+        box-shadow: 0 0 0 #000;
+    }
+
+    .btn-select.active {
+        background: #ffe800;
+        color: #000;
+        border-color: #ffe800;
+        box-shadow: 0 4px 0 #b3a200;
+    }
+    
+    .btn-select.active:active {
+        box-shadow: 0 0 0 #b3a200;
+    }
+
+    /* Schermo del risultato */
+    #display-screen {
+        background-color: #0a0a0a;
+        border: 2px solid #ffe800;
+        border-radius: 10px;
+        height: 180px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 30px;
+        box-shadow: inset 0 0 20px rgba(0,0,0,0.9);
+        overflow: hidden;
+    }
+
+    .dice-container {
+        display: flex;
+        gap: 15px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .die-result {
+        background: #222;
+        border: 2px solid #00ffcc;
+        color: #00ffcc;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 255, 204, 0.2);
+    }
+
+    .total-result {
+        color: #ffe800;
+        font-size: 2.5rem;
+        margin-top: 20px;
+        letter-spacing: 3px;
+        text-shadow: 0 0 10px rgba(255, 232, 0, 0.5);
+    }
+
+    /* Pulsante Lancio */
+    #roll-btn {
+        background: #ff3333;
+        color: #fff;
+        border: none;
+        padding: 20px 50px;
+        font-size: 2.5rem;
+        border-radius: 10px;
+        font-family: 'Share Tech Mono', monospace;
+        cursor: pointer;
+        text-transform: uppercase;
+        font-weight: bold;
+        box-shadow: 0 6px 0 #990000;
+        transition: 0.1s;
+        letter-spacing: 2px;
+        width: 100%;
+        max-width: 500px;
+    }
+
+    #roll-btn:active {
+        transform: translateY(6px);
+        box-shadow: 0 0 0 #990000;
+    }
+
+    #roll-btn:disabled {
+        background: #555;
+        box-shadow: 0 6px 0 #222;
+        color: #aaa;
+        cursor: not-allowed;
+    }
+    
+    /* Animazione Glitch per i dadi */
+    .flicker {
+        color: #aaa;
+        border-color: #555;
+    }
+
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Calcolo Probabilità Tattica</h2>
+
+    <div class="section-title">Numero di Dadi</div>
+    <div class="btn-group" id="num-group">
+        <button class="btn-select active" onclick="setNum(1)">1</button>
+        <button class="btn-select" onclick="setNum(2)">2</button>
+        <button class="btn-select" onclick="setNum(3)">3</button>
+        <button class="btn-select" onclick="setNum(4)">4</button>
+        <button class="btn-select" onclick="setNum(5)">5</button>
+    </div>
+
+    <div class="section-title">Tipo di Munizione (Facce)</div>
+    <div class="btn-group" id="type-group">
+        <button class="btn-select active" onclick="setType(6)">D6</button>
+        <button class="btn-select" onclick="setType(8)">D8</button>
+        <button class="btn-select" onclick="setType(10)">D10</button>
+        <button class="btn-select" onclick="setType(12)">D12</button>
+    </div>
+
+    <div id="display-screen">
+        <div style="color: #555; font-size: 2rem;">IN ATTESA DI AUTORIZZAZIONE...</div>
+    </div>
+
+    <button id="roll-btn" onclick="autorizzaLancio()">AUTORIZZA LANCIO</button>
+</div>
+
+<script>
+    let currentNum = 1;
+    let currentType = 6;
+    let isRolling = false;
+
+    // Logica di selezione visiva
+    function setNum(n) {
+        if(isRolling) return;
+        currentNum = n;
+        updateButtons('num-group', n);
+    }
+
+    function setType(t) {
+        if(isRolling) return;
+        currentType = t;
+        updateButtons('type-group', t);
+    }
+
+    function updateButtons(groupId, value) {
+        const group = document.getElementById(groupId);
+        const buttons = group.getElementsByTagName('button');
+        for(let btn of buttons) {
+            btn.classList.remove('active');
+            // Estraggo il numero dal testo (es: "D6" -> 6)
+            let btnVal = parseInt(btn.innerText.replace('D', ''));
+            if(btnVal === value) {
+                btn.classList.add('active');
+            }
+        }
+    }
+
+    // Animazione e lancio dadi
+    function autorizzaLancio() {
+        if (isRolling) return;
+        isRolling = true;
+        
+        const rollBtn = document.getElementById('roll-btn');
+        const display = document.getElementById('display-screen');
+        
+        rollBtn.disabled = true;
+        rollBtn.innerText = "CALCOLO IN CORSO...";
+        display.style.borderColor = "#ff3333";
+
+        let ticks = 0;
+        const maxTicks = 20; // Numero di "scatti" dell'animazione
+        
+        // Intervallo che cambia i numeri rapidamente per simulare il calcolo
+        const rollInterval = setInterval(() => {
+            let flickerHtml = "<div class='dice-container'>";
+            for (let i = 0; i < currentNum; i++) {
+                let randomFace = Math.floor(Math.random() * currentType) + 1;
+                flickerHtml += `<div class='die-result flicker'>${randomFace}</div>`;
+            }
+            flickerHtml += "</div>";
+            display.innerHTML = flickerHtml;
+            
+            ticks++;
+            if (ticks >= maxTicks) {
+                clearInterval(rollInterval);
+                concludiLancio(display, rollBtn);
+            }
+        }, 50); // Aggiorna ogni 50 millisecondi
+    }
+
+    function concludiLancio(display, rollBtn) {
+        let finalHtml = "<div class='dice-container'>";
+        let total = 0;
+
+        for (let i = 0; i < currentNum; i++) {
+            let result = Math.floor(Math.random() * currentType) + 1;
+            total += result;
+            finalHtml += `<div class='die-result'>${result}</div>`;
+        }
+        finalHtml += "</div>";
+        finalHtml += `<div class='total-result'>TOTALE IMPATTO: ${total}</div>`;
+        
+        const allData = getStorageData();
+        const dice = `${allData.local_player}_dice`;
+        
+        // Salvataggio nel DB locale e in rete
+        manageStorage('save', `${total}`, `${allData.local_player}`);
+        if(window.XRi) XRi._broadcast(`manageStorage('save', '${total}', '${allData.local_player}');`);
+
+        display.innerHTML = finalHtml;
+        display.style.borderColor = "#00ffcc";
+        
+        rollBtn.innerText = "NUOVO LANCIO";
+        rollBtn.disabled = false;
+        isRolling = false;
+    }
+</script>
+</body>
+</html>
