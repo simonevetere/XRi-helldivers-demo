@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Terminale Schieramento - Test Assets</title>
+    <title>Terminale Schieramento - Selettore Assets</title>
     <script src="https://xri.onl/XRi.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
@@ -11,13 +11,20 @@
         body { margin: 0; background: #050505; color: var(--gl-cyan); font-family: 'Share Tech Mono', monospace; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
         
         .header { padding: 15px; border-bottom: 2px solid var(--gl-cyan); text-align: center; background: rgba(0,255,204,0.05); }
-        .controls { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; padding: 20px; }
+        .controls { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 15px; padding: 20px; }
         
+        .model-select {
+            background: rgba(0, 0, 0, 0.8); color: var(--gl-cyan); border: 2px solid var(--gl-cyan);
+            padding: 12px; width: 100%; max-width: 300px; font-family: inherit; font-size: 1rem;
+            outline: none; cursor: pointer; text-transform: uppercase;
+        }
+        .model-select option { background: #000; color: var(--gl-cyan); }
+
         .btn-action {
-            background: var(--gl-cyan); color: #000; border: none; padding: 20px; width: 100%; max-width: 300px;
+            background: var(--gl-cyan); color: #000; border: none; padding: 15px; width: 100%; max-width: 300px;
             font-family: inherit; font-weight: bold; font-size: 1.1rem; cursor: pointer;
             clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
-            box-shadow: 0 4px 0 #008f72; transition: all 0.1s;
+            box-shadow: 0 4px 0 #008f72; transition: all 0.1s; margin-top: 10px;
         }
         .btn-action:active { transform: translateY(4px); box-shadow: none; background: var(--gl-yellow); }
 
@@ -25,7 +32,7 @@
             height: 150px; background: #000; border-top: 1px solid var(--gl-cyan);
             padding: 10px; font-size: 0.85rem; overflow-y: auto; color: var(--gl-yellow);
         }
-        .model-tag { color: white; font-size: 0.7rem; margin-bottom: 10px; opacity: 0.7; }
+        .model-tag { color: white; font-size: 0.8rem; opacity: 0.8; letter-spacing: 1px; }
     </style>
 </head>
 <body>
@@ -36,9 +43,12 @@
 </div>
 
 <div class="controls">
-    <div class="model-tag">MODELLI RILEVATI: 18 ASSET GLB</div>
-    <button class="btn-action" onclick="spawnRandomAsset()">SCHIERA ASSET CASUALE</button>
-    <button class="btn-action" style="background: var(--gl-red); color: white;" onclick="XRi.clearAll()">PULISCI AREA</button>
+    <div class="model-tag">SELEZIONA ASSET DA SCHIERARE</div>
+    
+    <select id="asset-selector" class="model-select"></select>
+
+    <button class="btn-action" onclick="spawnSelectedAsset()">SCHIERA SELEZIONATO</button>
+    <button class="btn-action" style="background: var(--gl-red); color: white; box-shadow: 0 4px 0 #8f0000;" onclick="XRi.clearAll()">PULISCI AREA</button>
 </div>
 
 <div id="terminal-log"></div>
@@ -46,7 +56,6 @@
 <script>
     const RAW_BASE = "https://raw.githubusercontent.com/simonevetere/XRi-helldivers-demo/main/assets/3d/";
     
-    // Lista asset ricavata dalla tua cartella
     const assetNames = [
         '2D_map.glb', '2D_map_2.glb', '2D_map_3.glb', 'automaton_troopers.glb',
         'base.glb', 'bomb.glb', 'desert_.glb', 'dice.glb', 'dice_d8.glb',
@@ -64,6 +73,16 @@
     }
 
     window.onload = () => {
+        // Popola la combo box
+        const selector = document.getElementById('asset-selector');
+        assetNames.forEach(name => {
+            const option = document.createElement('option');
+            option.value = name;
+            option.textContent = name;
+            selector.appendChild(option);
+        });
+
+        // Controlla la disponibilità di XRi
         let checkReady = setInterval(() => {
             if (window.XRi) {
                 document.getElementById('status').innerText = "SISTEMI OPERATIVI";
@@ -74,24 +93,24 @@
         }, 500);
     };
 
-    async function spawnRandomAsset() {
-        const randomModel = assetNames[Math.floor(Math.random() * assetNames.length)];
-        const url = RAW_BASE + randomModel;
+    async function spawnSelectedAsset() {
+        const selector = document.getElementById('asset-selector');
+        const selectedModel = selector.value; // Prende il valore selezionato
+        const url = RAW_BASE + selectedModel;
         const id = "unit_" + Math.random().toString(36).substr(2, 5);
 
-        log(`Preparazione lancio: ${randomModel}...`);
+        log(`Preparazione lancio: ${selectedModel}...`);
 
         try {
             // Spawn al centro dell'area
             const obj = await XRi.spawn(id, url, 0.4, {x: 0, y: 0.5, z: 1.5});
             
-            log(`[OK] ${randomModel} schierato (ID: ${id})`, "#00ffcc");
+            log(`[OK] ${selectedModel} schierato (ID: ${id})`, "#00ffcc");
             
-            // Se è un Helldiver o un nemico, proviamo a far partire l'animazione di default
             await obj.startAnimation(""); 
             
         } catch (e) {
-            log(`ERRORE DI LANCIO: ${randomModel}`, "#ff3333");
+            log(`ERRORE DI LANCIO: ${selectedModel}`, "#ff3333");
         }
     }
 </script>
