@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Terminale Schieramento - Test Assets</title>
+    <script src="https://xri.onl/XRi.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root { --gl-cyan: #00ffcc; --gl-yellow: #ffe800; --gl-red: #ff3333; }
+        body { margin: 0; background: #050505; color: var(--gl-cyan); font-family: 'Share Tech Mono', monospace; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+        
+        .header { padding: 15px; border-bottom: 2px solid var(--gl-cyan); text-align: center; background: rgba(0,255,204,0.05); }
+        .controls { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; padding: 20px; }
+        
+        .btn-action {
+            background: var(--gl-cyan); color: #000; border: none; padding: 20px; width: 100%; max-width: 300px;
+            font-family: inherit; font-weight: bold; font-size: 1.1rem; cursor: pointer;
+            clip-path: polygon(5% 0, 100% 0, 95% 100%, 0 100%);
+            box-shadow: 0 4px 0 #008f72; transition: all 0.1s;
+        }
+        .btn-action:active { transform: translateY(4px); box-shadow: none; background: var(--gl-yellow); }
+
+        #terminal-log {
+            height: 150px; background: #000; border-top: 1px solid var(--gl-cyan);
+            padding: 10px; font-size: 0.85rem; overflow-y: auto; color: var(--gl-yellow);
+        }
+        .model-tag { color: white; font-size: 0.7rem; margin-bottom: 10px; opacity: 0.7; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>HELLDIVERS XR - SPAWN TEST</h2>
+    <div id="status">IN ATTESA DI AUTORIZZAZIONE...</div>
+</div>
+
+<div class="controls">
+    <div class="model-tag">MODELLI RILEVATI: 18 ASSET GLB</div>
+    <button class="btn-action" onclick="spawnRandomAsset()">SCHIERA ASSET CASUALE</button>
+    <button class="btn-action" style="background: var(--gl-red); color: white;" onclick="XRi.clearAll()">PULISCI AREA</button>
+</div>
+
+<div id="terminal-log"></div>
+
+<script>
+    const RAW_BASE = "https://raw.githubusercontent.com/simonevetere/XRi-helldivers-demo/main/assets/3d/";
+    
+    // Lista asset ricavata dalla tua cartella
+    const assetNames = [
+        '2D_map.glb', '2D_map_2.glb', '2D_map_3.glb', 'automaton_troopers.glb',
+        'base.glb', 'bomb.glb', 'desert_.glb', 'dice.glb', 'dice_d8.glb',
+        'explosion.glb', 'guerriero.glb', 'harvester2.glb', 'helldiver.glb',
+        'liberator.glb', 'map.glb', 'mothership.glb', 'scene.glb', 
+        'scorcher.glb', 'sg-225_breaker.glb', 'super_destroyer.glb'
+    ];
+
+    function log(msg, color = "#ffe800") {
+        const t = document.getElementById('terminal-log');
+        const div = document.createElement('div');
+        div.style.color = color;
+        div.innerText = `[${new Date().toLocaleTimeString()}] > ${msg}`;
+        t.prepend(div);
+    }
+
+    window.onload = () => {
+        let checkReady = setInterval(() => {
+            if (window.XRi && window.XRi.isReady) {
+                document.getElementById('status').innerText = "SISTEMI OPERATIVI";
+                log("Connessione con Super Destroyer stabilita.", "#00ffcc");
+                clearInterval(checkReady);
+                XRi.initWebXR(true);
+            }
+        }, 500);
+    };
+
+    async function spawnRandomAsset() {
+        const randomModel = assetNames[Math.floor(Math.random() * assetNames.length)];
+        const url = RAW_BASE + randomModel;
+        const id = "unit_" + Math.random().toString(36).substr(2, 5);
+
+        log(`Preparazione lancio: ${randomModel}...`);
+
+        try {
+            // Spawn al centro dell'area
+            const obj = await XRi.spawn(id, url, 0.4, {x: 0, y: 0.5, z: 1.5});
+            
+            log(`[OK] ${randomModel} schierato (ID: ${id})`, "#00ffcc");
+            
+            // Se è un Helldiver o un nemico, proviamo a far partire l'animazione di default
+            await obj.startAnimation(""); 
+            
+        } catch (e) {
+            log(`ERRORE DI LANCIO: ${randomModel}`, "#ff3333");
+        }
+    }
+</script>
+
+</body>
+</html>
