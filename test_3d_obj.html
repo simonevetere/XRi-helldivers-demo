@@ -65,7 +65,7 @@
 
     window.onload = () => {
         let checkReady = setInterval(() => {
-            if (window.XRi && window.XRi.isReady) {
+            if (window.XRi) {
                 document.getElementById('status').innerText = "SISTEMI OPERATIVI";
                 log("Connessione con Super Destroyer stabilita.", "#00ffcc");
                 clearInterval(checkReady);
